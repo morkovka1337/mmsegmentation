@@ -23,6 +23,30 @@ def f_score(precision, recall, beta=1):
     return score
 
 
+def fpr(pred_label, label):
+    intersection_sum = np.logical_and(pred_label, label).sum()
+    fp = pred_label.sum() - intersection_sum
+    tn = label.shape[0] * label.shape[1] - \
+        np.logical_or(pred_label, label).sum()
+    return fp / (fp + tn)
+
+
+def fnr(pred_label, label):
+    intersection_sum = np.logical_and(pred_label, label).sum()
+    fn = label.sum() - intersection_sum
+    tp = intersection_sum
+    return fn / (fn + tp)
+
+
+def global_dice(img1, img2):
+
+    img1 = img1.astype(np.bool8)
+    img2 = img2.astype(np.bool8)
+    intersection = np.logical_and(img1, img2)
+    dice = (2*np.sum(intersection))/(np.sum(img1)+np.sum(img2))
+    return dice
+
+
 def intersect_and_union(pred_label,
                         label,
                         num_classes,
