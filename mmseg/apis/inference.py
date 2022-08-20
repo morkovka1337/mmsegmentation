@@ -133,4 +133,5 @@ def show_result_pyplot(model,
     plt.imshow(mmcv.bgr2rgb(img))
     plt.title(title)
     plt.tight_layout()
+    plt.axis("off")
     plt.show(block=block)

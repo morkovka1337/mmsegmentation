@@ -10,6 +10,7 @@ from prettytable import PrettyTable
 from torch.utils.data import Dataset
 
 from mmseg.core import eval_metrics, intersect_and_union, pre_eval_to_metrics
+from mmseg.core.evaluation.metrics import global_dice, fpr, fnr
 from mmseg.utils import get_root_logger
 from .builder import DATASETS
 from .pipelines import Compose, LoadAnnotations
@@ -294,7 +295,9 @@ class CustomDataset(Dataset):
             preds = [preds]
 
         pre_eval_results = []
-
+        g_dice = []
+        fpr_ = []
+        fpn_ = []
         for pred, index in zip(preds, indices):
             seg_map = self.get_gt_seg_map_by_idx(index)
             pre_eval_results.append(
@@ -310,8 +313,13 @@ class CustomDataset(Dataset):
                     # for more ditails
                     label_map=dict(),
                     reduce_zero_label=self.reduce_zero_label))
-
-        return pre_eval_results
+            dice = global_dice(pred, seg_map)
+            g_dice.append(dice)
+            # if abs(dice) < 1e-6:
+            #     print('\n', self.img_infos[index])
+            fpr_.append(fpr(pred, seg_map))
+            fpn_.append(fnr(pred, seg_map))
+        return pre_eval_results, g_dice, fpr_, fpn_
 
     def get_classes_and_palette(self, classes=None, palette=None):
         """Get class names of current dataset.

@@ -85,7 +85,9 @@ def single_gpu_test(model,
     # data_fetcher -> collate_fn(dataset[index]) -> data_sample
     # we use batch_sampler to get correct data idx
     loader_indices = data_loader.batch_sampler
-
+    g_dice = []
+    fnr_ = []
+    fpr_ = []
     for batch_indices, data in zip(loader_indices, data_loader):
         with torch.no_grad():
             result = model(return_loss=False, **data)
@@ -125,7 +127,10 @@ def single_gpu_test(model,
         if pre_eval:
             # TODO: adapt samples_per_gpu > 1.
             # only samples_per_gpu=1 valid now
-            result = dataset.pre_eval(result, indices=batch_indices)
+            result, dice, fpr, fpn = dataset.pre_eval(result, indices=batch_indices)
+            g_dice.extend(dice)
+            fpr_.extend(fpr)
+            fnr_.extend(fpn)
             results.extend(result)
         else:
             results.extend(result)
@@ -133,7 +138,12 @@ def single_gpu_test(model,
         batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
-
+    print()
+    print("mean dice:  ", round(np.mean(g_dice) * 100, 2) )
+    print("median dice:", round(np.median(g_dice) * 100, 2) )
+    print("FPR:        ", round(np.mean(fpr_), 4))
+    print("FNR:        ", round(np.mean(fnr_), 4), '\n')
+    # print("\n Global IoU: ", round((g_dice / (2 - g_dice)) * 100, 2))
     return results
 
 
