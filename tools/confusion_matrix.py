@@ -7,6 +7,7 @@ import mmcv
 import numpy as np
 from matplotlib.ticker import MultipleLocator
 from mmcv import Config, DictAction
+from torch import absolute
 
 from mmseg.datasets import build_dataset
 
@@ -21,6 +22,8 @@ def parse_args():
         'save_dir', help='directory where confusion matrix will be saved')
     parser.add_argument(
         '--show', action='store_true', help='show confusion matrix')
+    parser.add_argument(
+        '--absolute', action='store_true', help='Calculate absolute values instead of percentage')
     parser.add_argument(
         '--color-theme',
         default='winter',
@@ -70,7 +73,8 @@ def plot_confusion_matrix(confusion_matrix,
                           save_dir=None,
                           show=True,
                           title='Normalized Confusion Matrix',
-                          color_theme='winter'):
+                          color_theme='winter',
+                          absolute=False):
     """Draw confusion matrix with matplotlib.
 
     Args:
@@ -84,8 +88,9 @@ def plot_confusion_matrix(confusion_matrix,
     """
     # normalize the confusion matrix
     per_label_sums = confusion_matrix.sum(axis=1)[:, np.newaxis]
-    confusion_matrix = \
-        confusion_matrix.astype(np.float32) / per_label_sums * 100
+    if not absolute:
+        confusion_matrix = \
+            confusion_matrix.astype(np.float32) / per_label_sums * 100
 
     num_classes = len(labels)
     fig, ax = plt.subplots(
@@ -123,14 +128,14 @@ def plot_confusion_matrix(confusion_matrix,
         axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
     plt.setp(
         ax.get_xticklabels(), rotation=45, ha='left', rotation_mode='anchor')
-
+    cell = '{}%' if not absolute else '{}'
     # draw confusion matrix value
     for i in range(num_classes):
         for j in range(num_classes):
             ax.text(
                 j,
                 i,
-                '{}%'.format(
+                cell.format(
                     round(confusion_matrix[i, j], 2
                           ) if not np.isnan(confusion_matrix[i, j]) else -1),
                 ha='center',
@@ -177,7 +182,8 @@ def main():
         save_dir=args.save_dir,
         show=args.show,
         title=args.title,
-        color_theme=args.color_theme)
+        color_theme=args.color_theme,
+        absolute=args.absolute)
 
 
 if __name__ == '__main__':
